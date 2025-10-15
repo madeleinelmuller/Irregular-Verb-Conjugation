@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spanish Full Conjugation Drill - Block Format</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .input-correct {
+            border-color: #10b981; /* Emerald 500 */
+            background-color: #ecfdf5; /* Emerald 50 */
+        }
+        .input-incorrect {
+            border-color: #ef4444; /* Red 500 */
+            background-color: #fef2f2; /* Red 50 */
+        }
+        .change-note {
+            font-size: 0.7rem;
+            line-height: 1.1;
+            font-weight: 500;
+            color: #4f46e5; /* Indigo 600 */
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+        .verb-block-table th, .verb-block-table td {
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-2">
+                Full Irregular Verb Conjugation Drill
+            </h1>
+            <p class="text-gray-600 text-lg">
+                Fill in all forms across the 10 verbs, with one dedicated table for each.
+            </p>
+        </header>
+
+        <div id="auth-status" class="mb-4 text-sm text-center text-gray-500">
+            Connecting to secure service...
+        </div>
+
+        <div id="quiz-container" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-100">
+            
+            <div id="quiz-verb-blocks" class="space-y-8">
+                <!-- Verb blocks will be injected here by JavaScript -->
+            </div>
+
+            <button id="check-answers-btn" onclick="checkAnswers()" 
+                    class="mt-8 w-full py-3 px-4 border border-transparent rounded-lg shadow-lg text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-300 transform hover:scale-[1.01] disabled:bg-indigo-300">
+                Check All 60 Conjugations
+            </button>
+
+            <div id="feedback-area" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Results</h2>
+                <div id="score-summary" class="mb-4 p-3 rounded-lg bg-gray-50 text-gray-700 font-semibold"></div>
+                <ul id="corrections-list" class="space-y-3">
+                    <!-- Corrections will be displayed here -->
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // --- Firebase Initialization and Auth Setup ---
+        
+        setLogLevel('Debug');
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        let auth, db;
+        let userId = null;
+        
+        try {
+            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            auth = getAuth(app);
+            
+            setPersistence(auth, browserSessionPersistence).then(() => {
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        document.getElementById('auth-status').textContent = `Authenticated user: ${userId.substring(0, 8)}...`;
+                        const userDocRef = doc(db, 'artifacts', appId, 'users', userId, 'metadata', 'profile');
+                        await setDoc(userDocRef, { lastLogin: new Date().toISOString() }, { merge: true });
+                        renderQuiz();
+                    } else {
+                        userId = crypto.randomUUID();
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+            });
+
+        } catch (e) {
+            console.error("Firebase initialization failed:", e);
+            document.getElementById('auth-status').textContent = 'Error: Firebase failed to initialize.';
+        }
+
+        // --- Quiz Data and Logic ---
+
+        const PRONOUN_KEYS = ['yo', 'tu', 'el', 'nosotros', 'vosotros', 'ellos'];
+        
+        const PRONOUN_DISPLAY = {
+            yo: 'Yo', tu: 'Tú', el: 'Él/Ella/Ud.', 
+            nosotros: 'Nosotros/as', vosotros: 'Vosotros/as', ellos: 'Ellos/as/Uds.'
+        };
+        
+        const FULL_QUIZ_DATA = [
+            // 1. Tener (e -> ie, yo-go)
+            { inf: 'Tener (e \u2192 ie / Irreg. yo)', inf_short: 'Tener', 
+              forms: {
+                yo: { correct: 'tengo', change: 'Irreg. -go' },
+                tu: { correct: 'tienes', change: 'e \u2192 ie' },
+                el: { correct: 'tiene', change: 'e \u2192 ie' },
+                nosotros: { correct: 'tenemos', change: 'Regular' },
+                vosotros: { correct: 'tenéis', change: 'Regular' },
+                ellos: { correct: 'tienen', change: 'e \u2192 ie' }
+              }
+            },
+            // 2. Venir (e -> ie, yo-go)
+            { inf: 'Venir (e \u2192 ie / Irreg. yo)', inf_short: 'Venir',
+              forms: {
+                yo: { correct: 'vengo', change: 'Irreg. -go' },
+                tu: { correct: 'vienes', change: 'e \u2192 ie' },
+                el: { correct: 'viene', change: 'e \u2192 ie' },
+                nosotros: { correct: 'venimos', change: 'Regular' },
+                vosotros: { correct: 'venís', change: 'Regular' },
+                ellos: { correct: 'vienen', change: 'e \u2192 ie' }
+              }
+            },
+            // 3. Dormir (o -> ue)
+            { inf: 'Dormir (o \u2192 ue)', inf_short: 'Dormir',
+              forms: {
+                yo: { correct: 'duermo', change: 'o \u2192 ue' },
+                tu: { correct: 'duermes', change: 'o \u2192 ue' },
+                el: { correct: 'duerme', change: 'o \u2192 ue' },
+                nosotros: { correct: 'dormimos', change: 'Regular' },
+                vosotros: { correct: 'dormís', change: 'Regular' },
+                ellos: { correct: 'duermen', change: 'o \u2192 ue' }
+              }
+            },
+            // 4. Cerrar (e -> ie)
+            { inf: 'Cerrar (e \u2192 ie)', inf_short: 'Cerrar',
+              forms: {
+                yo: { correct: 'cierro', change: 'e \u2192 ie' },
+                tu: { correct: 'cierras', change: 'e \u2192 ie' },
+                el: { correct: 'cierra', change: 'e \u2192 ie' },
+                nosotros: { correct: 'cerramos', change: 'Regular' },
+                vosotros: { correct: 'cerráis', change: 'Regular' },
+                ellos: { correct: 'cierran', change: 'e \u2192 ie' }
+              }
+            },
+            // 5. Pedir (e -> i)
+            { inf: 'Pedir (e \u2192 i)', inf_short: 'Pedir',
+              forms: {
+                yo: { correct: 'pido', change: 'e \u2192 i' },
+                tu: { correct: 'pides', change: 'e \u2192 i' },
+                el: { correct: 'pide', change: 'e \u2192 i' },
+                nosotros: { correct: 'pedimos', change: 'Regular' },
+                vosotros: { correct: 'pedís', change: 'Regular' },
+                ellos: { correct: 'piden', change: 'e \u2192 i' }
+              }
+            },
+            // 6. Hacer (yo-go)
+            { inf: 'Hacer (Irreg. yo-go)', inf_short: 'Hacer',
+              forms: {
+                yo: { correct: 'hago', change: 'Irreg. -go' },
+                tu: { correct: 'haces', change: 'Regular' },
+                el: { correct: 'hace', change: 'Regular' },
+                nosotros: { correct: 'hacemos', change: 'Regular' },
+                vosotros: { correct: 'hacéis', change: 'Regular' },
+                ellos: { correct: 'hacen', change: 'Regular' }
+              }
+            },
+            // 7. Salir (yo-go)
+            { inf: 'Salir (Irreg. yo-go)', inf_short: 'Salir',
+              forms: {
+                yo: { correct: 'salgo', change: 'Irreg. -go' },
+                tu: { correct: 'sales', change: 'Regular' },
+                el: { correct: 'sale', change: 'Regular' },
+                nosotros: { correct: 'salimos', change: 'Regular' },
+                vosotros: { correct: 'salís', change: 'Regular' },
+                ellos: { correct: 'salen', change: 'Regular' }
+              }
+            },
+            // 8. Traer (yo-go)
+            { inf: 'Traer (Irreg. yo-go)', inf_short: 'Traer',
+              forms: {
+                yo: { correct: 'traigo', change: 'Irreg. -go' },
+                tu: { correct: 'traes', change: 'Regular' },
+                el: { correct: 'trae', change: 'Regular' },
+                nosotros: { correct: 'traemos', change: 'Regular' },
+                vosotros: { correct: 'traéis', change: 'Regular' },
+                ellos: { correct: 'traen', change: 'Regular' }
+              }
+            },
+            // 9. Ver (Irreg. yo)
+            { inf: 'Ver (Irreg. yo)', inf_short: 'Ver',
+              forms: {
+                yo: { correct: 'veo', change: 'Irreg. yo' },
+                tu: { correct: 'ves', change: 'Regular' },
+                el: { correct: 've', change: 'Regular' },
+                nosotros: { correct: 'vemos', change: 'Regular' },
+                vosotros: { correct: 'veis', change: 'Regular' },
+                ellos: { correct: 'ven', change: 'Regular' }
+              }
+            },
+            // 10. Oír (i -> y, yo-go)
+            { inf: 'Oír (i \u2192 y / Irreg. yo)', inf_short: 'Oír',
+              forms: {
+                yo: { correct: 'oigo', change: 'Irreg. -go' },
+                tu: { correct: 'oyes', change: 'i \u2192 y' },
+                el: { correct: 'oye', change: 'i \u2192 y' },
+                nosotros: { correct: 'oímos', change: 'Regular' },
+                vosotros: { correct: 'oís', change: 'Regular' },
+                ellos: { correct: 'oyen', change: 'i \u2192 y' }
+              }
+            }
+        ];
+        
+        // Helper function to generate the input cell content
+        const createInputCell = (verbIndex, pronoun) => {
+            const verbData = FULL_QUIZ_DATA[verbIndex];
+            const form = verbData.forms[pronoun];
+            const inputId = `q-${verbIndex}-${pronoun}`;
+            
+            return `
+                <input type="text" id="${inputId}" 
+                       class="w-full border-2 border-gray-300 rounded-lg p-1.5 text-sm text-center focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
+                       placeholder="${PRONOUN_DISPLAY[pronoun]}"
+                       data-verb="${verbData.inf_short}"
+                       data-pronoun="${pronoun}">
+                <div class="change-note text-indigo-600">${form.change}</div>
+            `;
+        };
+
+
+        window.renderQuiz = () => {
+            const quizBlocksContainer = document.getElementById('quiz-verb-blocks');
+            quizBlocksContainer.innerHTML = ''; 
+
+            FULL_QUIZ_DATA.forEach((verb, verbIndex) => {
+                const blockDiv = document.createElement('div');
+                blockDiv.className = 'p-4 border-2 border-indigo-200 rounded-xl bg-indigo-50 shadow-md';
+                
+                blockDiv.innerHTML = `
+                    <h3 class="text-xl font-extrabold text-indigo-800 mb-4 text-center">
+                        ${verb.inf}
+                    </h3>
+                    <table class="verb-block-table w-full divide-y divide-indigo-200">
+                        <thead class="bg-indigo-100">
+                            <tr>
+                                <th class="py-2 text-xs font-bold text-indigo-700 uppercase">Person</th>
+                                <th class="py-2 text-xs font-bold text-indigo-700 uppercase border-l border-indigo-200">Singular</th>
+                                <th class="py-2 text-xs font-bold text-indigo-700 uppercase border-l border-indigo-200">Plural</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-100">
+                            <!-- 1st Person Row -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="font-bold text-sm text-gray-700 border-r border-indigo-200">1st (Yo / Nosotros)</td>
+                                <td class="border-r border-indigo-200">${createInputCell(verbIndex, 'yo')}</td>
+                                <td>${createInputCell(verbIndex, 'nosotros')}</td>
+                            </tr>
+                            <!-- 2nd Person Row -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="font-bold text-sm text-gray-700 border-r border-indigo-200">2nd (Tú / Vosotros)</td>
+                                <td class="border-r border-indigo-200">${createInputCell(verbIndex, 'tu')}</td>
+                                <td>${createInputCell(verbIndex, 'vosotros')}</td>
+                            </tr>
+                            <!-- 3rd Person Row -->
+                            <tr class="hover:bg-gray-50">
+                                <td class="font-bold text-sm text-gray-700 border-r border-indigo-200">3rd (Ud. / Uds.)</td>
+                                <td class="border-r border-indigo-200">${createInputCell(verbIndex, 'el')}</td>
+                                <td>${createInputCell(verbIndex, 'ellos')}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+                quizBlocksContainer.appendChild(blockDiv);
+            });
+        };
+
+        window.checkAnswers = () => {
+            let correctCount = 0;
+            let totalQuestions = 0;
+            const correctionsList = document.getElementById('corrections-list');
+            const feedbackArea = document.getElementById('feedback-area');
+            const scoreSummary = document.getElementById('score-summary');
+            correctionsList.innerHTML = '';
+            
+            FULL_QUIZ_DATA.forEach((verb, verbIndex) => {
+                PRONOUN_KEYS.forEach(pronoun => {
+                    totalQuestions++;
+                    const item = verb.forms[pronoun];
+                    const inputId = `q-${verbIndex}-${pronoun}`;
+                    const inputElement = document.getElementById(inputId);
+                    
+                    if (!inputElement) return;
+
+                    // Clean user input and correct answer for comparison
+                    const userAnswer = inputElement.value.toLowerCase().trim();
+                    const correctAnswer = item.correct.toLowerCase().trim();
+
+                    // Reset classes
+                    inputElement.classList.remove('input-correct', 'input-incorrect', 'border-gray-300');
+                    
+                    if (userAnswer === correctAnswer) {
+                        correctCount++;
+                        inputElement.classList.add('input-correct');
+                    } else {
+                        inputElement.classList.add('input-incorrect');
+                        
+                        const correctionItem = document.createElement('li');
+                        correctionItem.className = 'p-3 bg-red-50 rounded-lg border border-red-200';
+                        
+                        const pronounDisplay = PRONOUN_DISPLAY[pronoun];
+                                               
+                        correctionItem.innerHTML = `
+                            <div class="text-sm font-medium text-red-700">
+                                ❌ **${verb.inf_short}** (${pronounDisplay}) [${item.change}]:
+                            </div>
+                            <div class="mt-1">
+                                Your Answer: <span class="font-mono bg-white p-1 rounded text-gray-800">${userAnswer || ' (empty)'}</span>
+                            </div>
+                            <div class="mt-1 text-sm">
+                                Correct Answer: <span class="font-extrabold text-red-900">${item.correct}</span>
+                            </div>
+                        `;
+                        correctionsList.appendChild(correctionItem);
+                    }
+                });
+            });
+
+            const score = Math.round((correctCount / totalQuestions) * 100);
+            
+            scoreSummary.innerHTML = `You scored <span class="text-indigo-600 font-extrabold">${correctCount}/${totalQuestions} (${score}%)</span>. Review the corrections below.`;
+            feedbackArea.classList.remove('hidden');
+        };
+
+    </script>
+</body>
+</html>
