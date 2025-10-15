@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spanish Full Conjugation Drill - Block Format</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+</head>
+<body class="p-4 sm:p-8 min-h-screen">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-2">
+                Full Irregular Verb Conjugation Drill
+            </h1>
+            <p class="text-gray-600 text-lg">
+                Fill in all forms across the 10 verbs, with one dedicated table for each.
+            </p>
+        </header>
+
+        <div id="quiz-container" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-100">
+            
+            <div id="quiz-verb-blocks" class="space-y-8">
+                </div>
+
+            <button id="check-answers-btn" onclick="checkAnswers()" 
+                    class="mt-8 w-full py-3 px-4 border-transparent rounded-lg shadow-lg text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus-ring transition duration-300 transform hover-scale">
+                Check All 60 Conjugations
+            </button>
+
+            <div id="feedback-area" class="mt-8 pt-6 border-t border-gray-200 hidden">
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">Results</h2>
+                <div id="score-summary" class="mb-4 p-3 rounded-lg bg-gray-50 text-gray-700 font-semibold"></div>
+                <ul id="corrections-list" class="space-y-3">
+                    </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        
+        const PRONOUN_KEYS = ['yo', 'tu', 'el', 'nosotros', 'vosotros', 'ellos'];
+        
+        const PRONOUN_DISPLAY = {
+            yo: 'Yo', tu: 'Tú', el: 'Él/Ella/Ud.', 
+            nosotros: 'Nosotros/as', vosotros: 'Vosotros/as', ellos: 'Ellos/as/Uds.'
+        };
+        
+        // \u2192 is the unicode for the right arrow (→)
+        const FULL_QUIZ_DATA = [
+            // 1. Tener (e -> ie, yo-go)
+            { inf: 'Tener (e \u2192 ie / Irreg. yo)', inf_short: 'Tener', 
+              forms: {
+                yo: { correct: 'tengo', change: 'Irreg. -go' },
+                tu: { correct: 'tienes', change: 'e \u2192 ie' },
+                el: { correct: 'tiene', change: 'e \u2192 ie' },
+                nosotros: { correct: 'tenemos', change: 'Regular' },
+                vosotros: { correct: 'tenéis', change: 'Regular' },
+                ellos: { correct: 'tienen', change: 'e \u2192 ie' }
+              }
+            },
+            // 2. Venir (e -> ie, yo-go)
+            { inf: 'Venir (e \u2192 ie / Irreg. yo)', inf_short: 'Venir',
+              forms: {
+                yo: { correct: 'vengo', change: 'Irreg. -go' },
+                tu: { correct: 'vienes', change: 'e \u2192 ie' },
+                el: { correct: 'viene', change: 'e \u2192 ie' },
+                nosotros: { correct: 'venimos', change: 'Regular' },
+                vosotros: { correct: 'venís', change: 'Regular' },
+                ellos: { correct: 'vienen', change: 'e \u2192 ie' }
+              }
+            },
+            // 3. Dormir (o -> ue)
+            { inf: 'Dormir (o \u2192 ue)', inf_short: 'Dormir',
+              forms: {
+                yo: { correct: 'duermo', change: 'o \u2192 ue' },
+                tu: { correct: 'duermes', change: 'o \u2192 ue' },
+                el: { correct: 'duerme', change: 'o \u2192 ue' },
+                nosotros: { correct: 'dormimos', change: 'Regular' },
+                vosotros: { correct: 'dormís', change: 'Regular' },
+                ellos: { correct: 'duermen', change: 'o \u2192 ue' }
+              }
+            },
+            // 4. Cerrar (e -> ie)
+            { inf: 'Cerrar (e \u2192 ie)', inf_short: 'Cerrar',
+              forms: {
+                yo: { correct: 'cierro', change: 'e \u2192 ie' },
+                tu: { correct: 'cierras', change: 'e \u2192 ie' },
+                el: { correct: 'cierra', change: 'e \u2192 ie' },
+                nosotros: { correct: 'cerramos', change: 'Regular' },
+                vosotros: { correct: 'cerráis', change: 'Regular' },
+                ellos: { correct: 'cierran', change: 'e \u2192 ie' }
+              }
+            },
+            // 5. Pedir (e -> i)
+            { inf: 'Pedir (e \u2192 i)', inf_short: 'Pedir',
+              forms: {
+                yo: { correct: 'pido', change: 'e \u2192 i' },
+                tu: { correct: 'pides', change: 'e \u2192 i' },
+                el: { correct: 'pide', change: 'e \u2192 i' },
+                nosotros: { correct: 'pedimos', change: 'Regular' },
+                vosotros: { correct: 'pedís', change: 'Regular' },
+                ellos: { correct: 'piden', change: 'e \u2192 i' }
+              }
+            },
+            // 6. Hacer (yo-go) - NOTE: The original 'el' form was 'ace' which is a typo, corrected to 'hace'
+            { inf: 'Hacer (Irreg. yo-go)', inf_short: 'Hacer',
+              forms: {
+                yo: { correct: 'hago', change: 'Irreg. -go' },
+                tu: { correct: 'haces', change: 'Regular' },
+                el: { correct: 'hace', change: 'Regular' },
+                nosotros: { correct: 'hacemos', change: 'Regular' },
+                vosotros: { correct: 'hacéis', change: 'Regular' },
+                ellos: { correct: 'hacen', change: 'Regular' }
+              }
+            },
+            // 7. Salir (yo-go)
+            { inf: 'Salir (Irreg. yo-go)', inf_short: 'Salir',
+              forms: {
+                yo: { correct: 'salgo', change: 'Irreg. -go' },
+                tu: { correct: 'sales', change: 'Regular' },
+                el: { correct: 'sale', change: 'Regular' },
+                nosotros: { correct: 'salimos', change: 'Regular' },
+                vosotros: { correct: 'salís', change: 'Regular' },
+                ellos: { correct: 'salen', change: 'Regular' }
+              }
+            },
+            // 8. Traer (yo-go)
+            { inf: 'Traer (Irreg. yo-go)', inf_short: 'Traer',
+              forms: {
+                yo: { correct: 'traigo', change: 'Irreg. -go' },
+                tu: { correct: 'traes', change: 'Regular' },
+                el: { correct: 'trae', change: 'Regular' },
+                nosotros: { correct: 'traemos', change: 'Regular' },
+                vosotros: { correct: 'traéis', change: 'Regular' },
+                ellos: { correct: 'traen', change: 'Regular' }
+              }
+            },
+            // 9. Ver (Irreg. yo)
+            { inf: 'Ver (Irreg. yo)', inf_short: 'Ver',
+              forms: {
+                yo: { correct: 'veo', change: 'Irreg. yo' },
+                tu: { correct: 'ves', change: 'Regular' },
+                el: { correct: 've', change: 'Regular' },
+                nosotros: { correct: 'vemos', change: 'Regular' },
+                vosotros: { correct: 'veis', change: 'Regular' },
+                ellos: { correct: 'ven', change: 'Regular' }
+              }
+            },
+            // 10. Oír (i -> y, yo-go)
+            { inf: 'Oír (i \u2192 y / Irreg. yo)', inf_short: 'Oír',
+              forms: {
+                yo: { correct: 'oigo', change: 'Irreg. -go' },
+                tu: { correct: 'oyes', change: 'i \u2192 y' },
+                el: { correct: 'oye', change: 'i \u2192 y' },
+                nosotros: { correct: 'oímos', change: 'Regular' },
+                vosotros: { correct: 'oís', change: 'Regular' },
+                ellos: { correct: 'oyen', change: 'i \u2192 y' }
+              }
+            }
+        ];
+        
+        // Helper function to generate the input cell content
+        const createInputCell = (verbIndex, pronoun) => {
+            const verbData = FULL_QUIZ_DATA[verbIndex];
+            const form = verbData.forms[pronoun];
+            const inputId = `q-${verbIndex}-${pronoun}`;
+            
+            return `
+                <input type="text" id="${inputId}" 
+                        class="input-field"
+                        placeholder="${PRONOUN_DISPLAY[pronoun]}"
+                        data-verb="${verbData.inf_short}"
+                        data-pronoun="${pronoun}">
+                <div class="change-note">${form.change}</div>
+            `;
+        };
+
+
+        window.renderQuiz = () => {
+            const quizBlocksContainer = document.getElementById('quiz-verb-blocks');
+            quizBlocksContainer.innerHTML = ''; 
+
+            FULL_QUIZ_DATA.forEach((verb, verbIndex) => {
+                const blockDiv = document.createElement('div');
+                blockDiv.className = 'verb-block-wrapper';
+                
+                blockDiv.innerHTML = `
+                    <h3 class="verb-title">
+                        ${verb.inf}
+                    </h3>
+                    <table class="verb-block-table w-full">
+                        <thead class="table-header">
+                            <tr>
+                                <th class="table-head-cell">Person</th>
+                                <th class="table-head-cell border-l-cell">Singular</th>
+                                <th class="table-head-cell border-l-cell">Plural</th>
+                            </tr>
+                        </thead>
+                        <tbody class="table-body">
+                            <tr class="table-row">
+                                <td class="table-data-person border-r-cell">1st (Yo / Nosotros)</td>
+                                <td class="border-r-cell">${createInputCell(verbIndex, 'yo')}</td>
+                                <td>${createInputCell(verbIndex, 'nosotros')}</td>
+                            </tr>
+                            <tr class="table-row">
+                                <td class="table-data-person border-r-cell">2nd (Tú / Vosotros)</td>
+                                <td class="border-r-cell">${createInputCell(verbIndex, 'tu')}</td>
+                                <td>${createInputCell(verbIndex, 'vosotros')}</td>
+                            </tr>
+                            <tr class="table-row">
+                                <td class="table-data-person border-r-cell">3rd (Ud. / Uds.)</td>
+                                <td class="border-r-cell">${createInputCell(verbIndex, 'el')}</td>
+                                <td>${createInputCell(verbIndex, 'ellos')}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+                quizBlocksContainer.appendChild(blockDiv);
+            });
+        };
+
+        window.checkAnswers = () => {
+            let correctCount = 0;
+            let totalQuestions = 0;
+            const correctionsList = document.getElementById('corrections-list');
+            const feedbackArea = document.getElementById('feedback-area');
+            const scoreSummary = document.getElementById('score-summary');
+            correctionsList.innerHTML = '';
+            
+            FULL_QUIZ_DATA.forEach((verb, verbIndex) => {
+                PRONOUN_KEYS.forEach(pronoun => {
+                    totalQuestions++;
+                    const item = verb.forms[pronoun];
+                    const inputId = `q-${verbIndex}-${pronoun}`;
+                    const inputElement = document.getElementById(inputId);
+                    
+                    if (!inputElement) return;
+
+                    // Clean user input and correct answer for comparison
+                    // Also removes accents for a more lenient check, as a user might not have an easy way to type them.
+                    const cleanString = (str) => {
+                        return str.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    };
+                    
+                    const userAnswer = cleanString(inputElement.value);
+                    const correctAnswer = cleanString(item.correct);
+
+                    // Reset classes
+                    inputElement.classList.remove('input-correct', 'input-incorrect', 'border-gray-300');
+                    
+                    if (userAnswer === correctAnswer) {
+                        correctCount++;
+                        inputElement.classList.add('input-correct');
+                    } else {
+                        inputElement.classList.add('input-incorrect');
+                        
+                        const correctionItem = document.createElement('li');
+                        correctionItem.className = 'correction-item';
+                        
+                        const pronounDisplay = PRONOUN_DISPLAY[pronoun];
+                                                        
+                        correctionItem.innerHTML = `
+                            <div class="correction-text">
+                                ❌ **${verb.inf_short}** (${pronounDisplay}) [${item.change}]:
+                            </div>
+                            <div class="mt-1">
+                                Your Answer: <span class="user-answer-display">${inputElement.value || ' (empty)'}</span>
+                            </div>
+                            <div class="mt-1 text-sm">
+                                Correct Answer: <span class="correct-answer-display">${item.correct}</span>
+                            </div>
+                        `;
+                        correctionsList.appendChild(correctionItem);
+                    }
+                });
+            });
+
+            const score = Math.round((correctCount / totalQuestions) * 100);
+            
+            scoreSummary.innerHTML = `You scored <span class="score-text">${correctCount}/${totalQuestions} (${score}%)</span>. Review the corrections below.`;
+            feedbackArea.classList.remove('hidden');
+        };
+
+        // Call renderQuiz when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Since there's no Firebase to wait for, we can just call renderQuiz immediately.
+            renderQuiz();
+        });
+
+    </script>
+</body>
+</html>
