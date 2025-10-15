@@ -4,36 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Spanish Full Conjugation Drill - Block Format</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Inter Font -->
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7f9fb;
-        }
-        .input-correct {
-            border-color: #10b981; /* Emerald 500 */
-            background-color: #ecfdf5; /* Emerald 50 */
-        }
-        .input-incorrect {
-            border-color: #ef4444; /* Red 500 */
-            background-color: #fef2f2; /* Red 50 */
-        }
-        .change-note {
-            font-size: 0.7rem;
-            line-height: 1.1;
-            font-weight: 500;
-            color: #4f46e5; /* Indigo 600 */
-            margin-top: 2px;
-            text-transform: uppercase;
-        }
-        .verb-block-table th, .verb-block-table td {
-            padding: 8px;
-            text-align: center;
-        }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
 </head>
 <body class="p-4 sm:p-8 min-h-screen">
 
@@ -47,18 +19,13 @@
             </p>
         </header>
 
-        <div id="auth-status" class="mb-4 text-sm text-center text-gray-500">
-            Connecting to secure service...
-        </div>
-
         <div id="quiz-container" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-100">
             
             <div id="quiz-verb-blocks" class="space-y-8">
-                <!-- Verb blocks will be injected here by JavaScript -->
-            </div>
+                </div>
 
             <button id="check-answers-btn" onclick="checkAnswers()" 
-                    class="mt-8 w-full py-3 px-4 border border-transparent rounded-lg shadow-lg text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 transition duration-300 transform hover:scale-[1.01] disabled:bg-indigo-300">
+                    class="mt-8 w-full py-3 px-4 border-transparent rounded-lg shadow-lg text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus-ring transition duration-300 transform hover-scale">
                 Check All 60 Conjugations
             </button>
 
@@ -66,60 +33,14 @@
                 <h2 class="text-2xl font-bold mb-4 text-gray-800">Results</h2>
                 <div id="score-summary" class="mb-4 p-3 rounded-lg bg-gray-50 text-gray-700 font-semibold"></div>
                 <ul id="corrections-list" class="space-y-3">
-                    <!-- Corrections will be displayed here -->
-                </ul>
+                    </ul>
             </div>
 
         </div>
     </div>
 
-    <!-- Firebase SDK Imports -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <script>
         
-        // --- Firebase Initialization and Auth Setup ---
-        
-        setLogLevel('Debug');
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        let auth, db;
-        let userId = null;
-        
-        try {
-            const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-            const app = initializeApp(firebaseConfig);
-            db = getFirestore(app);
-            auth = getAuth(app);
-            
-            setPersistence(auth, browserSessionPersistence).then(() => {
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        userId = user.uid;
-                        document.getElementById('auth-status').textContent = `Authenticated user: ${userId.substring(0, 8)}...`;
-                        const userDocRef = doc(db, 'artifacts', appId, 'users', userId, 'metadata', 'profile');
-                        await setDoc(userDocRef, { lastLogin: new Date().toISOString() }, { merge: true });
-                        renderQuiz();
-                    } else {
-                        userId = crypto.randomUUID();
-                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                            await signInWithCustomToken(auth, __initial_auth_token);
-                        } else {
-                            await signInAnonymously(auth);
-                        }
-                    }
-                });
-            });
-
-        } catch (e) {
-            console.error("Firebase initialization failed:", e);
-            document.getElementById('auth-status').textContent = 'Error: Firebase failed to initialize.';
-        }
-
-        // --- Quiz Data and Logic ---
-
         const PRONOUN_KEYS = ['yo', 'tu', 'el', 'nosotros', 'vosotros', 'ellos'];
         
         const PRONOUN_DISPLAY = {
@@ -127,6 +48,7 @@
             nosotros: 'Nosotros/as', vosotros: 'Vosotros/as', ellos: 'Ellos/as/Uds.'
         };
         
+        // \u2192 is the unicode for the right arrow (→)
         const FULL_QUIZ_DATA = [
             // 1. Tener (e -> ie, yo-go)
             { inf: 'Tener (e \u2192 ie / Irreg. yo)', inf_short: 'Tener', 
@@ -183,7 +105,7 @@
                 ellos: { correct: 'piden', change: 'e \u2192 i' }
               }
             },
-            // 6. Hacer (yo-go)
+            // 6. Hacer (yo-go) - NOTE: The original 'el' form was 'ace' which is a typo, corrected to 'hace'
             { inf: 'Hacer (Irreg. yo-go)', inf_short: 'Hacer',
               forms: {
                 yo: { correct: 'hago', change: 'Irreg. -go' },
@@ -248,11 +170,11 @@
             
             return `
                 <input type="text" id="${inputId}" 
-                       class="w-full border-2 border-gray-300 rounded-lg p-1.5 text-sm text-center focus:ring-indigo-500 focus:border-indigo-500 transition duration-150"
-                       placeholder="${PRONOUN_DISPLAY[pronoun]}"
-                       data-verb="${verbData.inf_short}"
-                       data-pronoun="${pronoun}">
-                <div class="change-note text-indigo-600">${form.change}</div>
+                        class="input-field"
+                        placeholder="${PRONOUN_DISPLAY[pronoun]}"
+                        data-verb="${verbData.inf_short}"
+                        data-pronoun="${pronoun}">
+                <div class="change-note">${form.change}</div>
             `;
         };
 
@@ -263,37 +185,34 @@
 
             FULL_QUIZ_DATA.forEach((verb, verbIndex) => {
                 const blockDiv = document.createElement('div');
-                blockDiv.className = 'p-4 border-2 border-indigo-200 rounded-xl bg-indigo-50 shadow-md';
+                blockDiv.className = 'verb-block-wrapper';
                 
                 blockDiv.innerHTML = `
-                    <h3 class="text-xl font-extrabold text-indigo-800 mb-4 text-center">
+                    <h3 class="verb-title">
                         ${verb.inf}
                     </h3>
-                    <table class="verb-block-table w-full divide-y divide-indigo-200">
-                        <thead class="bg-indigo-100">
+                    <table class="verb-block-table w-full">
+                        <thead class="table-header">
                             <tr>
-                                <th class="py-2 text-xs font-bold text-indigo-700 uppercase">Person</th>
-                                <th class="py-2 text-xs font-bold text-indigo-700 uppercase border-l border-indigo-200">Singular</th>
-                                <th class="py-2 text-xs font-bold text-indigo-700 uppercase border-l border-indigo-200">Plural</th>
+                                <th class="table-head-cell">Person</th>
+                                <th class="table-head-cell border-l-cell">Singular</th>
+                                <th class="table-head-cell border-l-cell">Plural</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-100">
-                            <!-- 1st Person Row -->
-                            <tr class="hover:bg-gray-50">
-                                <td class="font-bold text-sm text-gray-700 border-r border-indigo-200">1st (Yo / Nosotros)</td>
-                                <td class="border-r border-indigo-200">${createInputCell(verbIndex, 'yo')}</td>
+                        <tbody class="table-body">
+                            <tr class="table-row">
+                                <td class="table-data-person border-r-cell">1st (Yo / Nosotros)</td>
+                                <td class="border-r-cell">${createInputCell(verbIndex, 'yo')}</td>
                                 <td>${createInputCell(verbIndex, 'nosotros')}</td>
                             </tr>
-                            <!-- 2nd Person Row -->
-                            <tr class="hover:bg-gray-50">
-                                <td class="font-bold text-sm text-gray-700 border-r border-indigo-200">2nd (Tú / Vosotros)</td>
-                                <td class="border-r border-indigo-200">${createInputCell(verbIndex, 'tu')}</td>
+                            <tr class="table-row">
+                                <td class="table-data-person border-r-cell">2nd (Tú / Vosotros)</td>
+                                <td class="border-r-cell">${createInputCell(verbIndex, 'tu')}</td>
                                 <td>${createInputCell(verbIndex, 'vosotros')}</td>
                             </tr>
-                            <!-- 3rd Person Row -->
-                            <tr class="hover:bg-gray-50">
-                                <td class="font-bold text-sm text-gray-700 border-r border-indigo-200">3rd (Ud. / Uds.)</td>
-                                <td class="border-r border-indigo-200">${createInputCell(verbIndex, 'el')}</td>
+                            <tr class="table-row">
+                                <td class="table-data-person border-r-cell">3rd (Ud. / Uds.)</td>
+                                <td class="border-r-cell">${createInputCell(verbIndex, 'el')}</td>
                                 <td>${createInputCell(verbIndex, 'ellos')}</td>
                             </tr>
                         </tbody>
@@ -321,8 +240,13 @@
                     if (!inputElement) return;
 
                     // Clean user input and correct answer for comparison
-                    const userAnswer = inputElement.value.toLowerCase().trim();
-                    const correctAnswer = item.correct.toLowerCase().trim();
+                    // Also removes accents for a more lenient check, as a user might not have an easy way to type them.
+                    const cleanString = (str) => {
+                        return str.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                    };
+                    
+                    const userAnswer = cleanString(inputElement.value);
+                    const correctAnswer = cleanString(item.correct);
 
                     // Reset classes
                     inputElement.classList.remove('input-correct', 'input-incorrect', 'border-gray-300');
@@ -334,19 +258,19 @@
                         inputElement.classList.add('input-incorrect');
                         
                         const correctionItem = document.createElement('li');
-                        correctionItem.className = 'p-3 bg-red-50 rounded-lg border border-red-200';
+                        correctionItem.className = 'correction-item';
                         
                         const pronounDisplay = PRONOUN_DISPLAY[pronoun];
-                                               
+                                                        
                         correctionItem.innerHTML = `
-                            <div class="text-sm font-medium text-red-700">
+                            <div class="correction-text">
                                 ❌ **${verb.inf_short}** (${pronounDisplay}) [${item.change}]:
                             </div>
                             <div class="mt-1">
-                                Your Answer: <span class="font-mono bg-white p-1 rounded text-gray-800">${userAnswer || ' (empty)'}</span>
+                                Your Answer: <span class="user-answer-display">${inputElement.value || ' (empty)'}</span>
                             </div>
                             <div class="mt-1 text-sm">
-                                Correct Answer: <span class="font-extrabold text-red-900">${item.correct}</span>
+                                Correct Answer: <span class="correct-answer-display">${item.correct}</span>
                             </div>
                         `;
                         correctionsList.appendChild(correctionItem);
@@ -356,9 +280,15 @@
 
             const score = Math.round((correctCount / totalQuestions) * 100);
             
-            scoreSummary.innerHTML = `You scored <span class="text-indigo-600 font-extrabold">${correctCount}/${totalQuestions} (${score}%)</span>. Review the corrections below.`;
+            scoreSummary.innerHTML = `You scored <span class="score-text">${correctCount}/${totalQuestions} (${score}%)</span>. Review the corrections below.`;
             feedbackArea.classList.remove('hidden');
         };
+
+        // Call renderQuiz when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            // Since there's no Firebase to wait for, we can just call renderQuiz immediately.
+            renderQuiz();
+        });
 
     </script>
 </body>
