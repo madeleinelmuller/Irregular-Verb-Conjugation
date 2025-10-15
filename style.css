@@ -1,295 +1,402 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spanish Full Conjugation Drill - Block Format</title>
-    <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-</head>
-<body class="p-4 sm:p-8 min-h-screen">
+/* Color Palette */
+:root {
+    --color-gray-800: #1f2937;
+    --color-gray-700: #374151;
+    --color-gray-600: #4b5563;
+    --color-gray-500: #6b7280;
+    --color-gray-100: #f3f4f6;
+    --color-gray-50: #f9fafb;
+    --color-white: #ffffff;
 
-    <div class="max-w-4xl mx-auto">
-        <header class="text-center mb-8">
-            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-800 mb-2">
-                Full Irregular Verb Conjugation Drill
-            </h1>
-            <p class="text-gray-600 text-lg">
-                Fill in all forms across the 10 verbs, with one dedicated table for each.
-            </p>
-        </header>
+    --color-indigo-800: #3730a3;
+    --color-indigo-700: #4338ca;
+    --color-indigo-600: #4f46e5;
+    --color-indigo-500: #6366f1;
+    --color-indigo-200: #e0e7ff;
+    --color-indigo-100: #eef2ff;
+    --color-indigo-50: #f5f3ff;
 
-        <div id="quiz-container" class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl border border-gray-100">
-            
-            <div id="quiz-verb-blocks" class="space-y-8">
-                </div>
+    --color-emerald-500: #10b981;
+    --color-emerald-50: #ecfdf5;
+    
+    --color-red-900: #7f1d1d;
+    --color-red-700: #b91c1c;
+    --color-red-500: #ef4444;
+    --color-red-200: #fecaca;
+    --color-red-50: #fef2f2;
+}
 
-            <button id="check-answers-btn" onclick="checkAnswers()" 
-                    class="mt-8 w-full py-3 px-4 border-transparent rounded-lg shadow-lg text-lg font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus-ring transition duration-300 transform hover-scale">
-                Check All 60 Conjugations
-            </button>
+/* Global Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--color-gray-50);
+    padding: 1rem; /* p-4 */
+}
 
-            <div id="feedback-area" class="mt-8 pt-6 border-t border-gray-200 hidden">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800">Results</h2>
-                <div id="score-summary" class="mb-4 p-3 rounded-lg bg-gray-50 text-gray-700 font-semibold"></div>
-                <ul id="corrections-list" class="space-y-3">
-                    </ul>
-            </div>
+.min-h-screen {
+    min-height: 100vh;
+}
 
-        </div>
-    </div>
+@media (min-width: 640px) { /* sm:p-8 */
+    body {
+        padding: 2rem;
+    }
+}
 
-    <script>
-        
-        const PRONOUN_KEYS = ['yo', 'tu', 'el', 'nosotros', 'vosotros', 'ellos'];
-        
-        const PRONOUN_DISPLAY = {
-            yo: 'Yo', tu: 'Tú', el: 'Él/Ella/Ud.', 
-            nosotros: 'Nosotros/as', vosotros: 'Vosotros/as', ellos: 'Ellos/as/Uds.'
-        };
-        
-        // \u2192 is the unicode for the right arrow (→)
-        const FULL_QUIZ_DATA = [
-            // 1. Tener (e -> ie, yo-go)
-            { inf: 'Tener (e \u2192 ie / Irreg. yo)', inf_short: 'Tener', 
-              forms: {
-                yo: { correct: 'tengo', change: 'Irreg. -go' },
-                tu: { correct: 'tienes', change: 'e \u2192 ie' },
-                el: { correct: 'tiene', change: 'e \u2192 ie' },
-                nosotros: { correct: 'tenemos', change: 'Regular' },
-                vosotros: { correct: 'tenéis', change: 'Regular' },
-                ellos: { correct: 'tienen', change: 'e \u2192 ie' }
-              }
-            },
-            // 2. Venir (e -> ie, yo-go)
-            { inf: 'Venir (e \u2192 ie / Irreg. yo)', inf_short: 'Venir',
-              forms: {
-                yo: { correct: 'vengo', change: 'Irreg. -go' },
-                tu: { correct: 'vienes', change: 'e \u2192 ie' },
-                el: { correct: 'viene', change: 'e \u2192 ie' },
-                nosotros: { correct: 'venimos', change: 'Regular' },
-                vosotros: { correct: 'venís', change: 'Regular' },
-                ellos: { correct: 'vienen', change: 'e \u2192 ie' }
-              }
-            },
-            // 3. Dormir (o -> ue)
-            { inf: 'Dormir (o \u2192 ue)', inf_short: 'Dormir',
-              forms: {
-                yo: { correct: 'duermo', change: 'o \u2192 ue' },
-                tu: { correct: 'duermes', change: 'o \u2192 ue' },
-                el: { correct: 'duerme', change: 'o \u2192 ue' },
-                nosotros: { correct: 'dormimos', change: 'Regular' },
-                vosotros: { correct: 'dormís', change: 'Regular' },
-                ellos: { correct: 'duermen', change: 'o \u2192 ue' }
-              }
-            },
-            // 4. Cerrar (e -> ie)
-            { inf: 'Cerrar (e \u2192 ie)', inf_short: 'Cerrar',
-              forms: {
-                yo: { correct: 'cierro', change: 'e \u2192 ie' },
-                tu: { correct: 'cierras', change: 'e \u2192 ie' },
-                el: { correct: 'cierra', change: 'e \u2192 ie' },
-                nosotros: { correct: 'cerramos', change: 'Regular' },
-                vosotros: { correct: 'cerráis', change: 'Regular' },
-                ellos: { correct: 'cierran', change: 'e \u2192 ie' }
-              }
-            },
-            // 5. Pedir (e -> i)
-            { inf: 'Pedir (e \u2192 i)', inf_short: 'Pedir',
-              forms: {
-                yo: { correct: 'pido', change: 'e \u2192 i' },
-                tu: { correct: 'pides', change: 'e \u2192 i' },
-                el: { correct: 'pide', change: 'e \u2192 i' },
-                nosotros: { correct: 'pedimos', change: 'Regular' },
-                vosotros: { correct: 'pedís', change: 'Regular' },
-                ellos: { correct: 'piden', change: 'e \u2192 i' }
-              }
-            },
-            // 6. Hacer (yo-go) - NOTE: The original 'el' form was 'ace' which is a typo, corrected to 'hace'
-            { inf: 'Hacer (Irreg. yo-go)', inf_short: 'Hacer',
-              forms: {
-                yo: { correct: 'hago', change: 'Irreg. -go' },
-                tu: { correct: 'haces', change: 'Regular' },
-                el: { correct: 'hace', change: 'Regular' },
-                nosotros: { correct: 'hacemos', change: 'Regular' },
-                vosotros: { correct: 'hacéis', change: 'Regular' },
-                ellos: { correct: 'hacen', change: 'Regular' }
-              }
-            },
-            // 7. Salir (yo-go)
-            { inf: 'Salir (Irreg. yo-go)', inf_short: 'Salir',
-              forms: {
-                yo: { correct: 'salgo', change: 'Irreg. -go' },
-                tu: { correct: 'sales', change: 'Regular' },
-                el: { correct: 'sale', change: 'Regular' },
-                nosotros: { correct: 'salimos', change: 'Regular' },
-                vosotros: { correct: 'salís', change: 'Regular' },
-                ellos: { correct: 'salen', change: 'Regular' }
-              }
-            },
-            // 8. Traer (yo-go)
-            { inf: 'Traer (Irreg. yo-go)', inf_short: 'Traer',
-              forms: {
-                yo: { correct: 'traigo', change: 'Irreg. -go' },
-                tu: { correct: 'traes', change: 'Regular' },
-                el: { correct: 'trae', change: 'Regular' },
-                nosotros: { correct: 'traemos', change: 'Regular' },
-                vosotros: { correct: 'traéis', change: 'Regular' },
-                ellos: { correct: 'traen', change: 'Regular' }
-              }
-            },
-            // 9. Ver (Irreg. yo)
-            { inf: 'Ver (Irreg. yo)', inf_short: 'Ver',
-              forms: {
-                yo: { correct: 'veo', change: 'Irreg. yo' },
-                tu: { correct: 'ves', change: 'Regular' },
-                el: { correct: 've', change: 'Regular' },
-                nosotros: { correct: 'vemos', change: 'Regular' },
-                vosotros: { correct: 'veis', change: 'Regular' },
-                ellos: { correct: 'ven', change: 'Regular' }
-              }
-            },
-            // 10. Oír (i -> y, yo-go)
-            { inf: 'Oír (i \u2192 y / Irreg. yo)', inf_short: 'Oír',
-              forms: {
-                yo: { correct: 'oigo', change: 'Irreg. -go' },
-                tu: { correct: 'oyes', change: 'i \u2192 y' },
-                el: { correct: 'oye', change: 'i \u2192 y' },
-                nosotros: { correct: 'oímos', change: 'Regular' },
-                vosotros: { correct: 'oís', change: 'Regular' },
-                ellos: { correct: 'oyen', change: 'i \u2192 y' }
-              }
-            }
-        ];
-        
-        // Helper function to generate the input cell content
-        const createInputCell = (verbIndex, pronoun) => {
-            const verbData = FULL_QUIZ_DATA[verbIndex];
-            const form = verbData.forms[pronoun];
-            const inputId = `q-${verbIndex}-${pronoun}`;
-            
-            return `
-                <input type="text" id="${inputId}" 
-                        class="input-field"
-                        placeholder="${PRONOUN_DISPLAY[pronoun]}"
-                        data-verb="${verbData.inf_short}"
-                        data-pronoun="${pronoun}">
-                <div class="change-note">${form.change}</div>
-            `;
-        };
+.max-w-4xl {
+    max-width: 56rem; /* 896px */
+}
 
+.mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
 
-        window.renderQuiz = () => {
-            const quizBlocksContainer = document.getElementById('quiz-verb-blocks');
-            quizBlocksContainer.innerHTML = ''; 
+/* Header Styles */
+.text-center {
+    text-align: center;
+}
 
-            FULL_QUIZ_DATA.forEach((verb, verbIndex) => {
-                const blockDiv = document.createElement('div');
-                blockDiv.className = 'verb-block-wrapper';
-                
-                blockDiv.innerHTML = `
-                    <h3 class="verb-title">
-                        ${verb.inf}
-                    </h3>
-                    <table class="verb-block-table w-full">
-                        <thead class="table-header">
-                            <tr>
-                                <th class="table-head-cell">Person</th>
-                                <th class="table-head-cell border-l-cell">Singular</th>
-                                <th class="table-head-cell border-l-cell">Plural</th>
-                            </tr>
-                        </thead>
-                        <tbody class="table-body">
-                            <tr class="table-row">
-                                <td class="table-data-person border-r-cell">1st (Yo / Nosotros)</td>
-                                <td class="border-r-cell">${createInputCell(verbIndex, 'yo')}</td>
-                                <td>${createInputCell(verbIndex, 'nosotros')}</td>
-                            </tr>
-                            <tr class="table-row">
-                                <td class="table-data-person border-r-cell">2nd (Tú / Vosotros)</td>
-                                <td class="border-r-cell">${createInputCell(verbIndex, 'tu')}</td>
-                                <td>${createInputCell(verbIndex, 'vosotros')}</td>
-                            </tr>
-                            <tr class="table-row">
-                                <td class="table-data-person border-r-cell">3rd (Ud. / Uds.)</td>
-                                <td class="border-r-cell">${createInputCell(verbIndex, 'el')}</td>
-                                <td>${createInputCell(verbIndex, 'ellos')}</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                `;
-                quizBlocksContainer.appendChild(blockDiv);
-            });
-        };
+.mb-8 {
+    margin-bottom: 2rem;
+}
 
-        window.checkAnswers = () => {
-            let correctCount = 0;
-            let totalQuestions = 0;
-            const correctionsList = document.getElementById('corrections-list');
-            const feedbackArea = document.getElementById('feedback-area');
-            const scoreSummary = document.getElementById('score-summary');
-            correctionsList.innerHTML = '';
-            
-            FULL_QUIZ_DATA.forEach((verb, verbIndex) => {
-                PRONOUN_KEYS.forEach(pronoun => {
-                    totalQuestions++;
-                    const item = verb.forms[pronoun];
-                    const inputId = `q-${verbIndex}-${pronoun}`;
-                    const inputElement = document.getElementById(inputId);
-                    
-                    if (!inputElement) return;
+.text-3xl {
+    font-size: 1.875rem; /* 30px */
+    line-height: 2.25rem;
+}
 
-                    // Clean user input and correct answer for comparison
-                    // Also removes accents for a more lenient check, as a user might not have an easy way to type them.
-                    const cleanString = (str) => {
-                        return str.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-                    };
-                    
-                    const userAnswer = cleanString(inputElement.value);
-                    const correctAnswer = cleanString(item.correct);
+.sm\:text-4xl {
+    font-size: 2.25rem; /* 36px */
+    line-height: 2.5rem;
+}
 
-                    // Reset classes
-                    inputElement.classList.remove('input-correct', 'input-incorrect', 'border-gray-300');
-                    
-                    if (userAnswer === correctAnswer) {
-                        correctCount++;
-                        inputElement.classList.add('input-correct');
-                    } else {
-                        inputElement.classList.add('input-incorrect');
-                        
-                        const correctionItem = document.createElement('li');
-                        correctionItem.className = 'correction-item';
-                        
-                        const pronounDisplay = PRONOUN_DISPLAY[pronoun];
-                                                        
-                        correctionItem.innerHTML = `
-                            <div class="correction-text">
-                                ❌ **${verb.inf_short}** (${pronounDisplay}) [${item.change}]:
-                            </div>
-                            <div class="mt-1">
-                                Your Answer: <span class="user-answer-display">${inputElement.value || ' (empty)'}</span>
-                            </div>
-                            <div class="mt-1 text-sm">
-                                Correct Answer: <span class="correct-answer-display">${item.correct}</span>
-                            </div>
-                        `;
-                        correctionsList.appendChild(correctionItem);
-                    }
-                });
-            });
+.font-extrabold {
+    font-weight: 800;
+}
 
-            const score = Math.round((correctCount / totalQuestions) * 100);
-            
-            scoreSummary.innerHTML = `You scored <span class="score-text">${correctCount}/${totalQuestions} (${score}%)</span>. Review the corrections below.`;
-            feedbackArea.classList.remove('hidden');
-        };
+.text-gray-800 {
+    color: var(--color-gray-800);
+}
 
-        // Call renderQuiz when the page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            // Since there's no Firebase to wait for, we can just call renderQuiz immediately.
-            renderQuiz();
-        });
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
 
-    </script>
-</body>
-</html>
+.text-gray-600 {
+    color: var(--color-gray-600);
+}
+
+.text-lg {
+    font-size: 1.125rem; /* 18px */
+    line-height: 1.75rem;
+}
+
+/* New Audio Player Styles */
+.audio-player-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.audio-player-container audio {
+    width: 100%;
+    max-width: 20rem; /* Keeps the player from being too wide */
+}
+
+/* Quiz Container */
+.bg-white {
+    background-color: var(--color-white);
+}
+
+.p-6 {
+    padding: 1.5rem;
+}
+
+.sm\:p-8 {
+    padding: 2rem;
+}
+
+.rounded-xl {
+    border-radius: 0.75rem;
+}
+
+.shadow-2xl {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.border {
+    border-width: 1px;
+    border-style: solid;
+}
+
+.border-gray-100 {
+    border-color: var(--color-gray-100);
+}
+
+/* Verb Blocks Container */
+.space-y-8 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 2rem; /* space-y-8 */
+}
+
+/* Individual Verb Block Wrapper */
+.verb-block-wrapper {
+    padding: 1rem; /* p-4 */
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--color-indigo-200);
+    border-radius: 0.75rem; /* rounded-xl */
+    background-color: var(--color-indigo-50);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1); /* shadow-md */
+}
+
+/* Verb Title */
+.verb-title {
+    font-size: 1.25rem; /* text-xl */
+    font-weight: 800; /* font-extrabold */
+    color: var(--color-indigo-800);
+    margin-bottom: 1rem; /* mb-4 */
+    text-align: center;
+}
+
+/* Table Styles */
+.verb-block-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.verb-block-table th, .verb-block-table td {
+    padding: 0.5rem; /* 8px */
+    text-align: center;
+    border-color: var(--color-indigo-200);
+    border-style: solid;
+}
+
+.table-header {
+    background-color: var(--color-indigo-100);
+}
+
+.table-head-cell {
+    padding-top: 0.5rem; /* py-2 */
+    padding-bottom: 0.5rem; /* py-2 */
+    font-size: 0.75rem; /* text-xs */
+    font-weight: 700; /* font-bold */
+    color: var(--color-indigo-700);
+    text-transform: uppercase;
+}
+
+.border-l-cell {
+    border-left-width: 1px;
+}
+
+.table-body {
+    background-color: var(--color-white);
+}
+
+.table-body > tr:not(:last-child) > td {
+    border-bottom-width: 1px;
+    border-color: var(--color-gray-100);
+}
+
+.table-row:hover { /* hover:bg-gray-50 */
+    background-color: var(--color-gray-50);
+}
+
+.table-data-person {
+    font-weight: 700; /* font-bold */
+    font-size: 0.875rem; /* text-sm */
+    color: var(--color-gray-700);
+}
+
+.border-r-cell {
+    border-right-width: 1px;
+}
+
+/* Input Field Styles */
+.input-field {
+    width: 100%;
+    border-width: 2px;
+    border-style: solid;
+    border-color: var(--color-gray-300, #d1d5db); /* Fallback for gray-300 */
+    border-radius: 0.5rem; /* rounded-lg */
+    padding: 0.375rem; /* p-1.5 */
+    font-size: 0.875rem; /* text-sm */
+    text-align: center;
+    transition: border-color 150ms ease-in-out; /* duration-150 */
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: var(--color-indigo-500);
+    box-shadow: 0 0 0 1px var(--color-indigo-500);
+}
+
+/* Custom Input Status Classes */
+.input-correct {
+    border-color: var(--color-emerald-500) !important;
+    background-color: var(--color-emerald-50) !important;
+}
+
+.input-incorrect {
+    border-color: var(--color-red-500) !important;
+    background-color: var(--color-red-50) !important;
+}
+
+/* Change Note */
+.change-note {
+    font-size: 0.7rem;
+    line-height: 1.1;
+    font-weight: 500;
+    color: var(--color-indigo-600);
+    margin-top: 2px;
+    text-transform: uppercase;
+}
+
+/* Button Styles */
+.mt-8 {
+    margin-top: 2rem;
+}
+
+.w-full {
+    width: 100%;
+}
+
+.py-3 {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+}
+
+.px-4 {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.border-transparent {
+    border-color: transparent;
+}
+
+.rounded-lg {
+    border-radius: 0.5rem;
+}
+
+.shadow-lg {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.text-lg {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+}
+
+.font-semibold {
+    font-weight: 600;
+}
+
+.text-white {
+    color: var(--color-white);
+}
+
+.bg-indigo-600 {
+    background-color: var(--color-indigo-600);
+}
+
+.hover\:bg-indigo-700:hover {
+    background-color: var(--color-indigo-700);
+}
+
+.focus-ring:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.5); /* focus:ring-4 focus:ring-indigo-500 focus:ring-opacity-50 */
+}
+
+.transition {
+    transition-property: all;
+    transition-duration: 300ms;
+}
+
+.transform {
+    transform: none;
+}
+
+.hover-scale:hover {
+    transform: scale(1.01); /* hover:scale-[1.01] */
+}
+
+/* Feedback Area Styles */
+.pt-6 {
+    padding-top: 1.5rem;
+}
+
+.border-t {
+    border-top-width: 1px;
+    border-style: solid;
+}
+
+.border-gray-200 {
+    border-color: var(--color-gray-200, #e5e7eb); /* Fallback */
+}
+
+.hidden {
+    display: none;
+}
+
+.text-2xl {
+    font-size: 1.5rem;
+    line-height: 2rem;
+}
+
+.font-bold {
+    font-weight: 700;
+}
+
+/* Score Summary */
+.p-3 {
+    padding: 0.75rem;
+}
+
+.bg-gray-50 {
+    background-color: var(--color-gray-50);
+}
+
+.text-gray-700 {
+    color: var(--color-gray-700);
+}
+
+.score-text {
+    color: var(--color-indigo-600);
+    font-weight: 800; /* font-extrabold */
+}
+
+/* Corrections List */
+.space-y-3 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 0.75rem;
+}
+
+.correction-item {
+    padding: 0.75rem; /* p-3 */
+    background-color: var(--color-red-50);
+    border-radius: 0.5rem; /* rounded-lg */
+    border-width: 1px;
+    border-style: solid;
+    border-color: var(--color-red-200);
+}
+
+.correction-text {
+    font-size: 0.875rem; /* text-sm */
+    font-weight: 500; /* font-medium */
+    color: var(--color-red-700);
+}
+
+.user-answer-display {
+    font-family: monospace;
+    background-color: var(--color-white);
+    padding: 2px 4px;
+    border-radius: 0.25rem;
+    color: var(--color-gray-800);
+}
+
+.correct-answer-display {
+    font-weight: 800; /* font-extrabold */
+    color: var(--color-red-900);
+}
